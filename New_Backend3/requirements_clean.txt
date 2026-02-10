@@ -1,0 +1,21 @@
+# Core Django
+Django
+
+# API Framework
+djangorestframework
+django-cors-headers
+
+# Authentication (JWT)
+djangorestframework-simplejwt
+PyJWT
+
+# Documentation (Swagger)
+drf-yasg
+packaging
+inflection
+uritemplate
+
+# Utilities
+python-dotenv
+Pillow  # Likely needed for image uploads since you have MEDIA_ROOT
+requests

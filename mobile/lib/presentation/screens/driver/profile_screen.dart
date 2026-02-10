@@ -135,27 +135,7 @@ class ProfileScreen extends StatelessWidget {
                       
                       const SizedBox(height: 16),
                       
-                      if (user.isDriver) ...[
-                        _buildInfoCard(
-                          'Informations livreur',
-                          [
-                            _buildInfoRow(
-                              Icons.local_shipping,
-                              'Véhicule',
-                              user.vehicleInfo ?? 'Non spécifié',
-                            ),
-                            _buildInfoRow(
-                              Icons.toggle_on,
-                              'Statut',
-                              user.isAvailable ? 'Disponible' : 'Indisponible',
-                              valueColor: user.isAvailable
-                                  ? AppColors.success
-                                  : AppColors.textGrey,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                      ],
+                    
 
                       // Action buttons
                       _buildActionButton(

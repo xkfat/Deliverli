@@ -1,20 +1,30 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // Added useEffect
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useCommandesStore } from '../store/commandesStore';
 import { generateTrackingId } from '../utils/helpers';
+import { mockLivreurs } from '../utils/mockData'; // Import mocks just in case store is empty
 import toast from 'react-hot-toast';
 
 const AddCommande = () => {
   const navigate = useNavigate();
-  const { addCommande } = useCommandesStore();
+  // Get livreurs from store
+  const { addCommande, livreurs, setLivreurs } = useCommandesStore();
   
+  // Ensure livreurs are loaded (in case user goes directly to this page)
+  useEffect(() => {
+    if (livreurs.length === 0) {
+      setLivreurs(mockLivreurs);
+    }
+  }, []);
+
   const [formData, setFormData] = useState({
     clientName: '',
     clientPhone: '',
     adresse: '',
     montant: '',
     dateLivraison: '',
+    livreurId: '', // New Field
     notes: ''
   });
 
@@ -28,6 +38,11 @@ const AddCommande = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    // Find selected livreur object
+    const selectedLivreur = formData.livreurId 
+      ? livreurs.find(l => l.id.toString() === formData.livreurId.toString())
+      : null;
+
     const newCommande = {
       id: `CMD${Date.now()}`,
       trackingId: generateTrackingId(),
@@ -37,10 +52,12 @@ const AddCommande = () => {
       },
       adresse: {
         text: formData.adresse,
-        coordinates: null // Will be geocoded in production
+        coordinates: null 
       },
-      livreur: null,
-      statut: 'En attente',
+      // Assign the full livreur object if selected
+      livreur: selectedLivreur ? { id: selectedLivreur.id, name: selectedLivreur.name } : null,
+      // If a livreur is assigned, status starts as 'En cours', otherwise 'En attente'
+      statut: selectedLivreur ? 'En cours' : 'En attente',
       dateCreation: new Date(),
       dateLivraison: new Date(formData.dateLivraison),
       montant: parseFloat(formData.montant),
@@ -130,9 +147,6 @@ const AddCommande = () => {
                 className="input-field"
                 placeholder="45 Rue Hassan II, Agdal, Rabat"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Incluez le quartier et les points de repère pour faciliter la livraison
-              </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -163,9 +177,29 @@ const AddCommande = () => {
                   value={formData.dateLivraison}
                   onChange={handleChange}
                   required
-                  min={new Date().toISOString().split('T')[0]}
                   className="input-field"
                 />
+              </div>
+
+              {/* NEW: Livreur Selection */}
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium mb-2">
+                  Assigner un livreur (Optionnel)
+                </label>
+                <select
+                  name="livreurId"
+                  value={formData.livreurId}
+                  onChange={handleChange}
+                  className="input-field"
+                >
+                  <option value="">-- Non assigné (En attente) --</option>
+                  {livreurs.map(l => (
+                    <option key={l.id} value={l.id}>
+                      {l.name} {l.status !== 'Disponible' ? `(${l.status})` : ''}
+                    </option>
+                  ))}
+                </select>
+               
               </div>
             </div>
           </div>

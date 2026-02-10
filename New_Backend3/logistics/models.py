@@ -1,37 +1,12 @@
-from django.db import models
-from django.conf import settings
-# Create your models here.
-from django.contrib.auth.models import AbstractUser
-import uuid
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 import random
 import string
 from django.db import models
-# --- 1. UTILISATEUR DE BASE (Héritage de User) ---
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.auth.models import User
-'''
-class User(AbstractUser):
-    class Role(models.TextChoices):
-        ADMIN = "ADMIN", "Admin"
-        GESTIONNAIRE = "GESTIONNAIRE", "Gestionnaire"
-        LIVREUR = "LIVREUR", "Livreur"
-        CLIENT = "CLIENT", "Client"
-    
-    role = models.CharField(
-        max_length=20, 
-        choices=Role.choices, 
-        default=Role.CLIENT
-    )
 
-    def __str__(self):
-        return f"{self.username} ({self.role})"
+User = get_user_model()
 
-'''
-
-# --- 2. PROFILS SPÉCIFIQUES (Attributs du Diagramme) ---
+# --- 2. PROFILS SPÉCIFIQUES ---
 
 class Client(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='client_profile')
@@ -55,46 +30,70 @@ class Livreur(models.Model):
         return f"Livreur: {self.user.username} [{self.vehicle_info}]"
 
 
-# --- 3. LA COMMANDE (Relation entre Client, Livreur et Gestionnaire) ---
+# --- 3. LA COMMANDE ---
 
-from django.conf import settings
-# models.py - CORRECT WAY
-# models.py - CORRECT WAY
 class Commande(models.Model):
-    tracking_id = models.CharField(max_length=50, unique=True)
+    # ✅ FIX 1: set editable=False so it doesn't show in Admin form
+    tracking_id = models.CharField(max_length=50, unique=True, editable=False)
+    
     client_name = models.CharField(max_length=100)
     client_phone = models.CharField(max_length=20)
     
-    # ✅ FIXED: Add default value or allow null
     adresse_text = models.TextField(default="Adresse à définir")
     
-    # ✅ ADD: Destination coordinates for map
-    destination_lat = models.FloatField(null=True, blank=True)
-    destination_long = models.FloatField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)  
+    longitude = models.FloatField(null=True, blank=True)
     
-    statut = models.CharField(max_length=20, default='En attente')
+    class StatutChoices(models.TextChoices):       
+        EN_ATTENTE = 'En attente', 'En attente'
+        ASSIGNEE = 'Assignée', 'Assignée'
+        EN_COURS = 'En cours', 'En cours'
+        EN_LIVRAISON = 'En livraison', 'En livraison'
+        LIVRE = 'Livré', 'Livré'
+        ANNULE = 'Annulé', 'Annulé'
+        ECHOUE = 'Échoué', 'Échoué'
+        RETOUR = 'Retour', 'Retour'
+
+    statut = models.CharField(max_length=20, choices=StatutChoices.choices,  default=StatutChoices.EN_ATTENTE)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_livraison = models.DateTimeField(null=True, blank=True)
     montant = models.DecimalField(max_digits=10, decimal_places=2)
     
-    # ✅ FIXED: Driver relationship
+    est_fragile = models.BooleanField(default=False)
+    poids = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
+    dimensions = models.CharField(max_length=50, null=True, blank=True)
+    notes = models.TextField(null=True, blank=True)
+    date_livraison = models.DateField(null=True, blank=True, verbose_name="Date de Livraison Prévue")
     livreur = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL, 
         null=True, 
         blank=True,
-        limit_choices_to={'role': 'livreur'}
+        limit_choices_to={'role__iexact': 'livreur'}
     )
+
+    # ✅ FIX 2: This method generates the ID
+    def generate_tracking_id(self):
+        """Generate a short, unique tracking ID like: LIV-ABC12345"""
+        while True:
+            letters = ''.join(random.choices(string.ascii_uppercase, k=3))
+            numbers = ''.join(random.choices(string.digits, k=5))
+            new_id = f"LIV-{letters}{numbers}"
+            
+            # Ensure it is unique in the database
+            if not Commande.objects.filter(tracking_id=new_id).exists():
+                return new_id
+
+    # ✅ FIX 3: Override save() to ACTUALLY call the generator
+    def save(self, *args, **kwargs):
+        if not self.tracking_id:
+            self.tracking_id = self.generate_tracking_id()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Commande {self.tracking_id}"
 
-User = get_user_model()
-
 class Notification(models.Model):
-    """
-    Notification model for drivers and clients
-    """
     NOTIFICATION_TYPES = [
         ('order_assigned', 'Nouvelle commande assignée'),
         ('order_picked_up', 'Commande prise en charge'),
@@ -110,12 +109,9 @@ class Notification(models.Model):
     )
     
     notification_type = models.CharField(max_length=20, default='INFO')
-    
-    
     title = models.CharField(max_length=255)
     message = models.TextField()
     
-    # Optional: link to the commande
     commande = models.ForeignKey(
         'Commande',
         on_delete=models.CASCADE,
@@ -139,7 +135,6 @@ class Notification(models.Model):
     
     @property
     def time_ago(self):
-        """Return human-readable time ago"""
         from django.utils import timezone
         from datetime import timedelta
         
@@ -159,6 +154,3 @@ class Notification(models.Model):
             return f"Il y a {days}j"
         else:
             return self.created_at.strftime("%d/%m/%Y")
-
-# In logistics/views.py
- 

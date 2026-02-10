@@ -225,7 +225,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
           ),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
+              colors: [Color(0xFF3769B0), Color(0xFF1D4ED8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -503,49 +503,49 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                commande.trackingId,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF1F2937),
-                                ),
-                              ),
-                              if (commande.estFragile) ...[
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF59E0B).withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        '⚠️',
-                                        style: TextStyle(fontSize: 10),
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'Fragile',
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Color(0xFFF59E0B),
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+Row(
+  children: [
+    Flexible( // Allow text to shrink if needed
+      child: Text(
+        commande.trackingId,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Color(0xFF1F2937),
+          letterSpacing: 0.3,
+        ),
+        overflow: TextOverflow.ellipsis, // Add ellipsis if too long
+      ),
+    ),
+    const SizedBox(width: 8),
+    if (commande.estFragile)
+      Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: 8,
+          vertical: 2,
+        ),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF59E0B).withOpacity(0.1),
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('⚠️', style: TextStyle(fontSize: 10)),
+            SizedBox(width: 4),
+            Text(
+              'Fragile',
+              style: TextStyle(
+                fontSize: 10,
+                color: Color(0xFFF59E0B),
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+  ],
+),
                           const SizedBox(height: 4),
                           Row(
                             children: [

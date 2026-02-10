@@ -1,4 +1,5 @@
 import 'package:deliverli/logic/cubit/commande/profile_cubit.dart';
+import 'package:deliverli/presentation/screens/splash/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,7 +72,7 @@ class MyApp extends StatelessWidget {
               elevation: 0,
             ),
           ),
-          home: const AppNavigator(),
+          home: const SplashScreen(),
         ),
       ),
     );
@@ -164,30 +165,3 @@ class ForceLogoutButton extends StatelessWidget {
   }
 }
 
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primaryBlue,
-      body: Stack(
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                Icon(Icons.local_shipping, size: 80, color: Colors.white),
-                SizedBox(height: 32),
-                Text('Deliverli', style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.white)),
-                SizedBox(height: 48),
-                CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-              ],
-            ),
-          ),
-          const ForceLogoutButton(),
-        ],
-      ),
-    );
-  }
-}

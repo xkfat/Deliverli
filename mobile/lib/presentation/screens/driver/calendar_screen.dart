@@ -33,7 +33,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF2563EB),
+      backgroundColor: const Color(0xFF3769B0),
       body: Column(
         children: [
           // Header
@@ -44,7 +44,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
               20,
               16,
             ),
-            color: const Color(0xFF2563EB),
+            color: const Color(0xFF3769B0),
             child: BlocBuilder<CommandeCubit, CommandeState>(
               builder: (context, state) {
                 int totalUpcoming = 0;
@@ -501,7 +501,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2563EB),
+                    color: const Color(0xFF3769B0),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(

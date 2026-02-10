@@ -1,13 +1,17 @@
-import { MapPin, Edit, Trash2, UserPlus, Eye } from 'lucide-react';
 import CommandeRow from './CommandeRow';
 
 const CommandeTable = ({ 
   commandes, 
+  livreurs, // New Prop
+  onViewDetails,
   onViewLocation, 
   onAssignLivreur, 
   onChangeStatus, 
   onEdit, 
-  onDelete 
+  onDelete,
+  editingId,
+  editFormData,
+  onEditChange
 }) => {
   return (
     <div className="card overflow-hidden p-0">
@@ -25,6 +29,9 @@ const CommandeTable = ({
                 Adresse
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Date Livraison
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                 Livreur
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -40,11 +47,16 @@ const CommandeTable = ({
               <CommandeRow
                 key={commande.id}
                 commande={commande}
+                livreurs={livreurs} // Pass to row
+                onViewDetails={onViewDetails}
                 onViewLocation={onViewLocation}
                 onAssignLivreur={onAssignLivreur}
                 onChangeStatus={onChangeStatus}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                isEditing={editingId === commande.id}
+                editFormData={editFormData}
+                onEditChange={onEditChange}
               />
             ))}
           </tbody>

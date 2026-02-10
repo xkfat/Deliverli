@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../logic/cubit/commande/profile_cubit.dart';
-import '../../../logic/cubit/auth/auth_cubit.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({Key? key}) : super(key: key);
@@ -42,415 +41,254 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       body: BlocConsumer<ProfileCubit, ProfileState>(
         listener: (context, state) {
           if (state is ProfileSuccess) {
-            // Show success dialog
-            showDialog(
+            _showFeedbackDialog(
               context: context,
-              barrierDismissible: false,
-              builder: (dialogContext) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                title: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.check_circle_outline,
-                        color: AppColors.success,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Succès',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                content: Text(
-                  state.message,
-                  style: const TextStyle(fontSize: 15),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () {
-                      Navigator.of(dialogContext).pop(); // Close dialog
-                      Navigator.of(context).pop(); // Close screen
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryBlue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              isError: false,
+              message: state.message,
+              onPressed: () {
+                Navigator.of(context).pop(); // Close dialog
+                Navigator.of(context).pop(); // Close screen
+              },
             );
           } else if (state is ProfileError) {
-            // Show error dialog
-            showDialog(
+            _showFeedbackDialog(
               context: context,
-              builder: (dialogContext) => AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                title: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Erreur',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                content: Text(
-                  state.message,
-                  style: const TextStyle(fontSize: 15),
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(dialogContext).pop(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: AppColors.primaryBlue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              isError: true,
+              message: state.message,
             );
           }
         },
         builder: (context, state) {
           final isLoading = state is ProfileLoading;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Info card
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primaryBlue.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Row(
+          return Column(
+            children: [
+              // 1. Premium Header with Info
+              _buildHeaderSection(),
+
+              // 2. Form Content
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: AppColors.primaryBlue,
-                          size: 24,
+                        _buildPasswordField(
+                          label: 'Ancien mot de passe',
+                          hint: '••••••••',
+                          controller: _oldPasswordController,
+                          obscure: _obscureOldPassword,
+                          isLoading: isLoading,
+                          toggleObscure: () => setState(() => _obscureOldPassword = !_obscureOldPassword),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Le nouveau mot de passe doit contenir au moins 8 caractères',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.primaryBlue,
-                            ),
-                          ),
+                        const SizedBox(height: 20),
+                        _buildPasswordField(
+                          label: 'Nouveau mot de passe',
+                          hint: 'Minimum 8 caractères',
+                          controller: _newPasswordController,
+                          obscure: _obscureNewPassword,
+                          isLoading: isLoading,
+                          toggleObscure: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
                         ),
+                        const SizedBox(height: 20),
+                        _buildPasswordField(
+                          label: 'Confirmer le mot de passe',
+                          hint: 'Répétez le nouveau mot de passe',
+                          controller: _confirmPasswordController,
+                          obscure: _obscureConfirmPassword,
+                          isLoading: isLoading,
+                          toggleObscure: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        ),
+                        const SizedBox(height: 40),
+                        
+                        // Submit Button
+                        _buildSubmitButton(isLoading),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // Old Password
-                  const Text(
-                    'Ancien mot de passe',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _oldPasswordController,
-                    obscureText: _obscureOldPassword,
-                    enabled: !isLoading,
-                    decoration: InputDecoration(
-                      hintText: 'Entrez votre ancien mot de passe',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureOldPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureOldPassword = !_obscureOldPassword;
-                          });
-                        },
-                      ),
-                      errorStyle: const TextStyle(height: 0),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // New Password
-                  const Text(
-                    'Nouveau mot de passe',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _newPasswordController,
-                    obscureText: _obscureNewPassword,
-                    enabled: !isLoading,
-                    decoration: InputDecoration(
-                      hintText: 'Entrez votre nouveau mot de passe',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureNewPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureNewPassword = !_obscureNewPassword;
-                          });
-                        },
-                      ),
-                      errorStyle: const TextStyle(height: 0),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '';
-                      }
-                      if (value.length < 8) {
-                        return '';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Confirm Password
-                  const Text(
-                    'Confirmer le mot de passe',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textDark,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _confirmPasswordController,
-                    obscureText: _obscureConfirmPassword,
-                    enabled: !isLoading,
-                    decoration: InputDecoration(
-                      hintText: 'Confirmez votre nouveau mot de passe',
-                      prefixIcon: const Icon(Icons.lock_outline),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            _obscureConfirmPassword = !_obscureConfirmPassword;
-                          });
-                        },
-                      ),
-                      errorStyle: const TextStyle(height: 0),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '';
-                      }
-                      if (value != _newPasswordController.text) {
-                        return '';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 40),
-
-                  // Submit Button
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: isLoading ? null : _handleSubmit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor:
-                            AppColors.primaryBlue.withOpacity(0.5),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              width: 24,
-                              height: 24,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text(
-                              'Changer le mot de passe',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
     );
   }
 
-  void _handleSubmit() {
-    // Validate form
-    if (!_formKey.currentState!.validate()) {
-      _showErrorDialog('Veuillez remplir tous les champs correctement');
-      return;
-    }
-
-    // Check passwords match
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      _showErrorDialog('Les mots de passe ne correspondent pas');
-      return;
-    }
-
-    // Hide keyboard
-    FocusScope.of(context).unfocus();
-
-    // Call cubit
-    context.read<ProfileCubit>().changePassword(
-          oldPassword: _oldPasswordController.text,
-          newPassword: _newPasswordController.text,
-        );
+  Widget _buildHeaderSection() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+      decoration: const BoxDecoration(
+        color: AppColors.primaryBlue,
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+        
+          const SizedBox(height: 8),
+          Text(
+            'Assurez-vous d\'utiliser un mot de passe sécurisé pour protéger votre compte livreur.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _showErrorDialog(String message) {
+  Widget _buildPasswordField({
+    required String label,
+    required String hint,
+    required TextEditingController controller,
+    required bool obscure,
+    required bool isLoading,
+    required VoidCallback toggleObscure,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          obscureText: obscure,
+          enabled: !isLoading,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            hintText: hint,
+            hintStyle: TextStyle(color: AppColors.textGrey.withOpacity(0.5)),
+            prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primaryBlue),
+            suffixIcon: IconButton(
+              icon: Icon(
+                obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                color: AppColors.textGrey,
+                size: 20,
+              ),
+              onPressed: toggleObscure,
+            ),
+            contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade200),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.primaryBlue, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.error),
+            ),
+          ),
+          validator: (value) => (value == null || value.isEmpty) ? 'Champ requis' : null,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSubmitButton(bool isLoading) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : _handleSubmit,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primaryBlue,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          elevation: 2,
+        ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Text(
+                'Confirmer les modifications',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+      ),
+    );
+  }
+
+  void _handleSubmit() {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_newPasswordController.text != _confirmPasswordController.text) {
+      _showFeedbackDialog(context: context, isError: true, message: 'Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    context.read<ProfileCubit>().changePassword(
+      oldPassword: _oldPasswordController.text,
+      newPassword: _newPasswordController.text,
+    );
+  }
+
+  void _showFeedbackDialog({
+    required BuildContext context,
+    required bool isError,
+    required String message,
+    VoidCallback? onPressed,
+  }) {
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Row(
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.error_outline,
-                color: AppColors.error,
-                size: 24,
-              ),
+            const SizedBox(height: 10),
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: isError ? AppColors.error : AppColors.success,
+              size: 60,
             ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Erreur',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(height: 20),
+            Text(
+              isError ? 'Oups !' : 'Parfait !',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            Text(message, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textGrey)),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onPressed ?? () => Navigator.pop(ctx),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: isError ? AppColors.error : AppColors.success,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
+                child: const Text('OK', style: TextStyle(color: Colors.white)),
               ),
             ),
           ],
         ),
-        content: Text(
-          message,
-          style: const TextStyle(fontSize: 15),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primaryBlue,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: const Text(
-              'OK',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

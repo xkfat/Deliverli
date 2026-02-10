@@ -1,8 +1,10 @@
 import '../services/api_service.dart';
 import '../models/commande_model.dart';
+import '../services/mock_api_service.dart';
 
 class CommandeRepository {
   final ApiService _apiService;
+  static const bool USE_MOCK_DATA = true;
 
   CommandeRepository(this._apiService);
 

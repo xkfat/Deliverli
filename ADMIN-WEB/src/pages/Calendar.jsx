@@ -19,7 +19,7 @@ import Dialog from '../components/common/Dialog';
 import { useNavigate } from 'react-router-dom';
 
 const Calendar = () => {
-  const { commandes } = useCommandesStore();
+const { commandes } = useCommandesStore();
   const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());

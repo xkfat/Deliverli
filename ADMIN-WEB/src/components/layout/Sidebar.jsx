@@ -5,7 +5,7 @@ import {
   Users, 
   Calendar, 
   Map, 
-  Flame,
+  History,
   Plus
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
@@ -17,11 +17,15 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Tableau de bord', path: '/dashboard' },
     { icon: Package, label: 'Commandes', path: '/commandes' },
-    { icon: Plus, label: 'Ajouter Commande', path: '/add-commande' },
-    { icon: Users, label: 'Équipe', path: '/equipe', adminOnly: true },
+    { icon: History, label: 'Historique Commandes', path: '/commandes-historique' },
+    { 
+      icon: Users, 
+      label: 'Équipe', 
+      path: '/equipe', 
+      adminOnly: true 
+    },
     { icon: Calendar, label: 'Calendrier', path: '/calendar' },
     { icon: Map, label: 'Carte Live', path: '/live-map' },
-    { icon: Flame, label: 'Zones de Demande', path: '/heatmap' },
   ];
 
   const filteredNavItems = navItems.filter(item => 
@@ -43,7 +47,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         } lg:translate-x-0`}
       >
         <div className="h-16 flex items-center justify-center border-b border-gray-200 dark:border-gray-700 px-6">
-          <span className="text-xl font-bold text-primary-600">DeliveryPro</span>
+          <span className="text-xl font-bold text-primary-600">Deliverli</span>
         </div>
 
         <nav className="p-4 space-y-2">

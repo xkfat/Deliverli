@@ -1,0 +1,28 @@
+[
+  {
+    "id": "1",
+    "trackingId": "LIV-FYY56006",
+    "client": { "name": "CLIENT", "phone": "123456787" },
+    "adresse": { "text": "Adresse à définir", "coordinates": { "lat": 33.9715, "lng": -6.8498 } },
+    "livreur": { "id": "34", "name": "TEST Livreur 0" },
+    "statut": "En cours",
+    "dateCreation": "2026-02-10T00:01:09Z",
+    "dateLivraison": "2026-02-11T10:00:00Z",
+    "montant": 10.0,
+    "poids": "10 kg",
+    "dimensions": "Standard"
+  },
+  {
+    "id": "2",
+    "trackingId": "LIV-GTG66959",
+    "client": { "name": "Dr. Mouna Alami", "phone": "+212707112233" },
+    "adresse": { "text": "Villa 14, Avenue Beni Mellal, Souissi, Rabat", "coordinates": { "lat": 33.9823, "lng": -6.8354 } },
+    "livreur": null,
+    "statut": "Livré",
+    "dateCreation": "2026-02-10T06:13:40Z",
+    "dateLivraison": "2026-02-11T12:00:00Z",
+    "montant": 850.0,
+    "poids": "0.5 kg",
+    "dimensions": "petit"
+  }
+]

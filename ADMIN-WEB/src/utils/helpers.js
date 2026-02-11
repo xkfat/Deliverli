@@ -1,9 +1,13 @@
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-export const formatDate = (date) => {
-  return format(new Date(date), 'dd/MM/yyyy', { locale: fr });
+// utils/helpers.js
+export const formatDate = (dateString) => {
+  if (!dateString) return '—';
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? '—' : date.toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' });
 };
+
 
 export const formatDateTime = (date) => {
   return format(new Date(date), 'dd/MM/yyyy HH:mm', { locale: fr });
@@ -45,15 +49,16 @@ const deg2rad = (deg) => {
 export const findNearestLivreurs = (location, livreurs, maxDistance = 10) => {
   return livreurs
     .filter(liv => liv.isActive && liv.status === 'Disponible')
-    .map(liv => ({
-      ...liv,
-      distance: calculateDistance(
-        location.lat,
-        location.lng,
-        liv.currentLocation.lat,
-        liv.currentLocation.lng
-      )
-    }))
+   .map(liv => ({
+  ...liv,
+  distance: calculateDistance(
+    location.lat,
+    location.lng,
+    liv.currentLocation.lat,
+    liv.currentLocation.lng
+  )
+}))
+
     .filter(liv => liv.distance <= maxDistance)
     .sort((a, b) => a.distance - b.distance);
 };

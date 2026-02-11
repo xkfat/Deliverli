@@ -18,59 +18,63 @@ class DriverHomeScreen extends StatefulWidget {
 }
 
 class _DriverHomeScreenState extends State<DriverHomeScreen> {
-  // ✅ Location service for 5-second updates
   LocationService? _locationService;
   
   @override
   void initState() {
     super.initState();
-    
-    // Wait a split second for the provider tree to stabilize
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
         final authState = context.read<AuthCubit>().state;
-        
         if (authState is AuthAuthenticated) {
-          // Double check synchronization
           context.read<ApiService>().setTokens(authState.accessToken, authState.refreshToken);
-          
-          print('📦 MainScreen: Loading commandes for ${authState.user.username}');
           context.read<CommandeCubit>().loadTodayCommandes();
         }
       }
     });
   }
 
-  // ✅ Start location tracking when driver becomes available
   void _startLocationTracking() async {
     try {
       if (_locationService == null) {
-        // Create ApiService instance
         final apiService = ApiService();
         final locationRepository = LocationRepository(apiService);
         _locationService = LocationService(locationRepository);
       }
-      
       await _locationService!.startLocationUpdates();
-      print('📍 Location tracking started');
     } catch (e) {
       print('❌ Error starting location tracking: $e');
     }
   }
 
-  // ✅ Stop location tracking when driver becomes unavailable
   void _stopLocationTracking() {
     if (_locationService != null) {
       _locationService!.stopLocationUpdates();
-      print('🛑 Location tracking stopped');
     }
   }
 
   @override
   void dispose() {
-    // ✅ Always stop location tracking when screen is disposed
     _stopLocationTracking();
     super.dispose();
+  }
+
+  // ✅ Updated Filter Logic using your CommandeModel fields
+  bool _shouldShowCommande(dynamic commande) {
+    final now = DateTime.now();
+    
+    // 1. If it has a delivery date, check if it matches today
+    if (commande.dateLivraison != null) {
+      return commande.dateLivraison!.year == now.year &&
+             commande.dateLivraison!.month == now.month &&
+             commande.dateLivraison!.day == now.day;
+    }
+
+    // 2. If no delivery date is set (e.g. just created), check if it was created today
+    // This prevents hiding new orders that don't have a schedule yet
+    return commande.dateCreation.year == now.year &&
+           commande.dateCreation.month == now.month &&
+           commande.dateCreation.day == now.day;
   }
 
   @override
@@ -81,7 +85,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         onRefresh: () => context.read<CommandeCubit>().loadTodayCommandes(),
         child: CustomScrollView(
           slivers: [
-            // Header
             SliverToBoxAdapter(
               child: _buildHeader(),
             ),
@@ -91,7 +94,6 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               child: _buildStatsCards(),
             ),
 
-            // Section Title
             const SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(20, 8, 20, 12),
@@ -112,9 +114,7 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 if (state is CommandeLoading) {
                   return const SliverFillRemaining(
                     child: Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF2563EB),
-                      ),
+                      child: CircularProgressIndicator(color: Color(0xFF2563EB)),
                     ),
                   );
                 }
@@ -125,31 +125,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: Color(0xFFEF4444),
-                          ),
+                          const Icon(Icons.error_outline, size: 64, color: Color(0xFFEF4444)),
                           const SizedBox(height: 16),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: Text(
-                              state.message,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF1F2937),
-                              ),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
+                          Text(state.message, style: const TextStyle(color: Color(0xFF1F2937))),
                           const SizedBox(height: 24),
                           ElevatedButton(
-                            onPressed: () {
-                              context.read<CommandeCubit>().loadTodayCommandes();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2563EB),
-                            ),
+                            onPressed: () => context.read<CommandeCubit>().loadTodayCommandes(),
                             child: const Text('Réessayer'),
                           ),
                         ],
@@ -159,25 +140,20 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                 }
 
                 if (state is CommandeLoaded) {
-                  if (state.commandes.isEmpty) {
+                  // ✅ APPLY FILTER HERE
+                  final todaysCommandes = state.commandes
+                      .where((c) => _shouldShowCommande(c))
+                      .toList();
+
+                  if (todaysCommandes.isEmpty) {
                     return SliverFillRemaining(
                       child: Center(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
-                              Icons.inventory_2_outlined,
-                              size: 64,
-                              color: Colors.grey.withOpacity(0.5),
-                            ),
+                            Icon(Icons.inventory_2_outlined, size: 64, color: Colors.grey.withOpacity(0.5)),
                             const SizedBox(height: 16),
-                            const Text(
-                              "Aucune livraison pour aujourd'hui",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
+                            const Text("Aucune livraison pour aujourd'hui", style: TextStyle(color: Color(0xFF6B7280))),
                           ],
                         ),
                       ),
@@ -189,18 +165,16 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final commande = state.commandes[index];
+                          final commande = todaysCommandes[index];
                           return _buildDeliveryCard(commande);
                         },
-                        childCount: state.commandes.length,
+                        childCount: todaysCommandes.length,
                       ),
                     ),
                   );
                 }
 
-                return const SliverFillRemaining(
-                  child: SizedBox(),
-                );
+                return const SliverFillRemaining(child: SizedBox());
               },
             ),
           ],
@@ -213,25 +187,17 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated) return const SizedBox();
-
         final user = state.user;
         
         return Container(
-          padding: EdgeInsets.fromLTRB(
-            20,
-            MediaQuery.of(context).padding.top + 20,
-            20,
-            20,
-          ),
+          padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 20, 20, 20),
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [Color(0xFF3769B0), Color(0xFF1D4ED8)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(24),
-            ),
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -243,26 +209,12 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
-                          'Bonjour,',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
-                        ),
+                        const Text('Bonjour,', style: TextStyle(fontSize: 14, color: Colors.white70)),
                         const SizedBox(height: 4),
-                        Text(
-                          user.username,
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
+                        Text(user.username, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
                       ],
                     ),
                   ),
-                  // ✅ Availability Toggle with location tracking
                   _buildAvailabilityToggle(user),
                 ],
               ),
@@ -273,77 +225,41 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     );
   }
 
-  // ✅ Availability toggle with location tracking
   Widget _buildAvailabilityToggle(user) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated) return const SizedBox();
-        
-        final currentUser = state.user;
-        final isAvailable = currentUser.isAvailable;
+        final isAvailable = state.user.isAvailable;
 
         return InkWell(
           onTap: () async {
-            print('🔄 Toggling availability from $isAvailable to ${!isAvailable}');
-            
-            // ✅ Handle location tracking based on availability
             if (!isAvailable) {
-              // Driver becoming available - start location tracking
               _startLocationTracking();
             } else {
-              // Driver becoming unavailable - stop location tracking
               _stopLocationTracking();
             }
-            
-            // Toggle availability
             await context.read<AuthCubit>().toggleAvailability(!isAvailable);
-            
-            // Show feedback
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    !isAvailable
-                        ? 'Vous êtes maintenant disponible - Localisation activée'
-                        : 'Vous êtes maintenant indisponible - Localisation désactivée',
-                  ),
-                  duration: const Duration(seconds: 2),
-                  backgroundColor: !isAvailable
-                      ? const Color(0xFF10B981)
-                      : const Color(0xFFF59E0B),
+                  content: Text(!isAvailable ? 'Vous êtes maintenant disponible' : 'Vous êtes maintenant indisponible'),
+                  backgroundColor: !isAvailable ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
                 ),
               );
             }
           },
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 10,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isAvailable
-                  ? const Color(0xFF10B981)
-                  : Colors.white.withOpacity(0.3),
+              color: isAvailable ? const Color(0xFF10B981) : Colors.white.withOpacity(0.3),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  isAvailable ? Icons.check_circle : Icons.cancel,
-                  color: Colors.white,
-                  size: 18,
-                ),
+                Icon(isAvailable ? Icons.check_circle : Icons.cancel, color: Colors.white, size: 18),
                 const SizedBox(width: 6),
-                Text(
-                  isAvailable ? 'Disponible' : 'Indisponible',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text(isAvailable ? 'Disponible' : 'Indisponible', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ],
             ),
           ),
@@ -360,41 +276,25 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
         int livre = 0;
 
         if (state is CommandeLoaded) {
-          enAttente = state.totalEnAttente;
-          enCours = state.totalEnCours;
-          livre = state.totalLivre;
+          // ✅ Apply same filter to stats
+          final todaysCommandes = state.commandes
+              .where((c) => _shouldShowCommande(c))
+              .toList();
+          
+          enAttente = todaysCommandes.where((c) => c.statut == 'En attente').length;
+          enCours = todaysCommandes.where((c) => c.statut == 'En cours').length;
+          livre = todaysCommandes.where((c) => c.statut == 'Livré').length;
         }
 
         return Padding(
           padding: const EdgeInsets.all(20),
           child: Row(
             children: [
-              Expanded(
-                child: _buildStatCard(
-                  'En attente',
-                  '$enAttente',
-                  const Color(0xFFF59E0B),
-                  Icons.schedule,
-                ),
-              ),
+              Expanded(child: _buildStatCard('En attente', '$enAttente', const Color(0xFFF59E0B), Icons.schedule)),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'En cours',
-                  '$enCours',
-                  const Color(0xFF3B82F6),
-                  Icons.local_shipping,
-                ),
-              ),
+              Expanded(child: _buildStatCard('En cours', '$enCours', const Color(0xFF3B82F6), Icons.local_shipping)),
               const SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  'Livrées',
-                  '$livre',
-                  const Color(0xFF10B981),
-                  Icons.check_circle,
-                ),
-              ),
+              Expanded(child: _buildStatCard('Livrées', '$livre', const Color(0xFF10B981), Icons.check_circle)),
             ],
           ),
         );
@@ -402,55 +302,21 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
     );
   }
 
-  Widget _buildStatCard(
-    String label,
-    String value,
-    Color color,
-    IconData icon,
-  ) {
+  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(icon, color: color, size: 24),
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color)),
           const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: Color(0xFF6B7280),
-            ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
         ],
       ),
     );
@@ -462,27 +328,14 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 2))],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DeliveryDetailScreen(
-                  commande: commande,
-                ),
-              ),
-            );
+            Navigator.push(context, MaterialPageRoute(builder: (context) => DeliveryDetailScreen(commande: commande)));
           },
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -490,106 +343,40 @@ class _DriverHomeScreenState extends State<DriverHomeScreen> {
               children: [
                 Row(
                   children: [
-                    Container(
-                      width: 4,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: commande.statusColor,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
+                    Container(width: 4, height: 60, decoration: BoxDecoration(color: commande.statusColor, borderRadius: BorderRadius.circular(2))),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-Row(
-  children: [
-    Flexible( // Allow text to shrink if needed
-      child: Text(
-        commande.trackingId,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Color(0xFF1F2937),
-          letterSpacing: 0.3,
-        ),
-        overflow: TextOverflow.ellipsis, // Add ellipsis if too long
-      ),
-    ),
-    const SizedBox(width: 8),
-    if (commande.estFragile)
-      Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 8,
-          vertical: 2,
-        ),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF59E0B).withOpacity(0.1),
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('⚠️', style: TextStyle(fontSize: 10)),
-            SizedBox(width: 4),
-            Text(
-              'Fragile',
-              style: TextStyle(
-                fontSize: 10,
-                color: Color(0xFFF59E0B),
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      ),
-  ],
-),
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  commande.trackingId,
+                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1F2937)),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              if (commande.estFragile)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(color: const Color(0xFFF59E0B).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text('⚠️', style: TextStyle(fontSize: 10)),
+                                      SizedBox(width: 4),
+                                      Text('Fragile', style: TextStyle(fontSize: 10, color: Color(0xFFF59E0B), fontWeight: FontWeight.bold)),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
                           const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.person_outline,
-                                size: 14,
-                                color: Color(0xFF6B7280),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  commande.clientName,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF1F2937),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.location_on_outlined,
-                                size: 14,
-                                color: Color(0xFF6B7280),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  commande.adresseText,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6B7280),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
+                          Text(commande.clientName, style: const TextStyle(fontSize: 14, color: Color(0xFF1F2937))),
+                          Text(commande.adresseText, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
                         ],
                       ),
                     ),
@@ -597,49 +384,16 @@ Row(
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: commande.statusColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                commande.statusIcon,
-                                size: 14,
-                                color: commande.statusColor,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                commande.statut,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: commande.statusColor,
-                                ),
-                              ),
-                            ],
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: commande.statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                          child: Text(commande.statut, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: commande.statusColor)),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '${commande.montant.toStringAsFixed(2)} DH',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF10B981),
-                          ),
-                        ),
+                        Text('${commande.montant.toStringAsFixed(2)} DH', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
                       ],
                     ),
                   ],
                 ),
-                
-                // Action buttons
                 if (commande.statut != 'Livré' && commande.statut != 'Annulé') ...[
                   const SizedBox(height: 12),
                   const Divider(height: 1, color: Color(0xFFE5E7EB)),
@@ -647,57 +401,57 @@ Row(
                   Row(
                     children: [
                       if (commande.statut == 'En attente')
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              context.read<CommandeCubit>().updateStatus(
-                                commande.id,
-                                'En cours',
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B82F6),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Commencer',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      if (commande.statut == 'En cours')
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _showDeliveryConfirmation(commande);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF10B981),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              elevation: 0,
-                            ),
-                            child: const Text(
-                              'Marquer comme livré',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
+Expanded(
+    child: ElevatedButton(
+      onPressed: () {
+        context.read<CommandeCubit>().updateStatus(
+          commande.id,
+          'En cours',
+        );
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF3B82F6), // Blue background
+        foregroundColor: Colors.white,            // ✅ TEXT COLOR: Sets text to White
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: 0,
+      ),
+      child: const Text(
+        'Commencer',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ),// inside _buildDeliveryCard...
+
+if (commande.statut == 'En cours')
+  Expanded(
+    child: ElevatedButton(
+      onPressed: () {
+        _showDeliveryConfirmation(commande);
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: const Color(0xFF10B981), // Green background
+        foregroundColor: Colors.white,            // ✅ TEXT COLOR: Sets text to White
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        elevation: 0,
+      ),
+      child: const Text(
+        'Marquer comme livré',
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    ),
+  ),                    ],
                   ),
                 ],
               ],
@@ -712,35 +466,16 @@ Row(
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
         title: const Text('Confirmer la livraison'),
-        content: Text(
-          'Confirmer que le colis ${commande.trackingId} a été livré à ${commande.clientName} ?',
-        ),
+        content: Text('Confirmer que le colis ${commande.trackingId} a été livré ?'),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Annuler'),
-          ),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Annuler')),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(dialogContext);
-              context.read<CommandeCubit>().updateStatus(
-                commande.id,
-                'Livré',
-              );
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Livraison confirmée'),
-                  backgroundColor: Color(0xFF10B981),
-                ),
-              );
+              context.read<CommandeCubit>().updateStatus(commande.id, 'Livré');
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF10B981),
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF10B981)),
             child: const Text('Confirmer'),
           ),
         ],

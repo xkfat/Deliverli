@@ -1,3 +1,43 @@
+export const mockLivreurs = [
+  {
+    id: "36",
+    name: "Amin Tazi",
+    email: "amin.tazi@deliverli.ma",
+    phone: "+212 6 61 12 34 56",
+    username: "livreur_amin",
+    isActive: true,
+    role: "LIVREUR",
+    vehicle_info: "Peugeot Partner (Matricule: 56789-B-6)",
+    currentLocation: { lat: 33.9698, lng: -6.8521 },
+    status: "Disponible" // No active 'En cours' command in DB
+  },
+
+  {
+    id: "47",
+    name: "Omar Idrissi",
+    email: "omar.idrissi@deliverli.ma",
+    phone: "+212 7 00 11 22 33",
+    username: "livreur_omar",
+    isActive: true,
+    role: "LIVREUR",
+    vehicle_info: "Yamaha Neos (Scooter)",
+    currentLocation: { lat: 33.9810, lng: -6.8320 },
+    status: "Disponible" // Fixed: Was orange but had 0 packages
+  },
+  {
+    id: "34",
+    name: "TEST Livreur 0",
+    email: "livreur1@deliverli.com",
+    phone: "323332322",
+    username: "livreur_0",
+    isActive: true,
+    role: "LIVREUR",
+    vehicle_info: "moto blanc",
+    currentLocation: { lat: 33.9715, lng: -6.8498 },
+    status: "En livraison" // Set to busy because he has Order #1
+  }
+];
+
 export const mockCommandes = [
   {
     id: "1",
@@ -10,14 +50,27 @@ export const mockCommandes = [
       text: "Adresse à définir",
       coordinates: { lat: 33.9715, lng: -6.8498 }
     },
-    livreur: { id: "34", name: "livreur_0" },
+    livreur: { id: "34", name: "TEST Livreur 0" }, // Assigned to ID 34
     statut: "En cours",
-    dateCreation: new Date("2026-02-10"),
-    dateLivraison: new Date("2026-02-10"),
+    dateCreation: "2026-02-10T00:01:09Z",
     montant: 10.00,
     poids: "10 kg",
     dimensions: "Standard"
   },
+  {
+  id: "3",
+  trackingId: "LIV-NEW12345",
+  client: { name: "Test Client 2", phone: "+212600112233" },
+  adresse: { text: "Rue des Tests, Rabat", coordinates: { lat: 33.9750, lng: -6.8360 } },
+  livreur: { id: "47", name: "Omar Idrissi" },
+  statut: "En attente",
+  dateCreation: "2026-02-10T08:00:00Z",
+  dateLivraison: "2026-02-12T14:00:00Z",
+  montant: 120.0,
+  poids: "5 kg",
+  dimensions: "Moyen"
+}
+,
   {
     id: "2",
     trackingId: "LIV-GTG66959",
@@ -31,84 +84,26 @@ export const mockCommandes = [
     },
     livreur: null,
     statut: "Livré",
-    dateCreation: new Date("2026-02-10"),
-    dateLivraison: new Date("2026-02-23"),
+        dateLivraison: "2026-02-11T10:00:00Z", // ← Add this
+
+    dateCreation: "2026-02-10T06:13:40Z",
     montant: 850.00,
     poids: "0.5 kg",
     dimensions: "petit"
-  },
-  {
-    id: "3",
-    trackingId: "LIV-YFZ22234",
-    client: {
-      name: "Sarah Benjelloun",
-      phone: "+212 6 61 12 34 56"
-    },
-    adresse: {
-      text: "22 Avenue de France, Agdal, Rabat (près du McDo)",
-      coordinates: { lat: 34.0045, lng: -6.8485 }
-    },
-    livreur: null,
-    statut: "Annulé",
-    dateCreation: new Date("2026-02-10"),
-    dateLivraison: new Date("2026-02-10"),
-    montant: 250.00,
-    notes: "Déposer à la réception au 3ème étage"
-  }
-];
-
-export const mockLivreurs = [
-  {
-    id: "36",
-    name: "Amin Tazi",
-    email: "amin.tazi@deliverli.ma",
-    phone: "+212 6 61 12 34 56",
-    username: "livreur_amin",
-    isActive: true,
-    role: "livreur",
-    vehicle_info: "Peugeot Partner (Matricule: 56789-B-6)",
-    currentLocation: { lat: 33.9698, lng: -6.8521 }, // Rabat Agdal
-    deliveriesToday: 5,
-    status: "Disponible"
-  },
-  {
-    id: "47",
-    name: "Omar Idrissi",
-    email: "omar.idrissi@deliverli.ma",
-    phone: "+212 7 00 11 22 33",
-    username: "livreur_omar",
-    isActive: true,
-    role: "livreur",
-    vehicle_info: "Yamaha Neos (Scooter)",
-    currentLocation: { lat: 33.9810, lng: -6.8320 }, // Rabat Souissi
-    deliveriesToday: 2,
-    status: "En livraison"
-  },
-  {
-    id: "34",
-    name: "TEST Livreur 0",
-    email: "livreur1@deliverli.com",
-    phone: "323332322",
-    username: "livreur_0",
-    isActive: true,
-    role: "livreur",
-    vehicle_info: "moto blanc",
-    currentLocation: { lat: 33.9715, lng: -6.8498 },
-    deliveriesToday: 0,
-    status: "Disponible"
   }
 ];
 
 export const mockGestionnaires = [
   {
     id: "35",
+        dateLivraison: "2026-02-11T10:00:00Z", // ← Add this
+
     name: "Manager Principal",
     email: "manager1@test.com",
     phone: "+212 6 00 00 00 00",
     username: "manager_1",
-    role: "admin",
-    isActive: true,
-    dateCreation: new Date("2026-02-08")
+    role: "ADMIN",
+    isActive: true
   },
   {
     id: "31",
@@ -116,8 +111,9 @@ export const mockGestionnaires = [
     email: "elmami478@gmail.com",
     phone: "+212 6 11 22 33 44",
     username: "elmami",
-    role: "admin",
-    isActive: true,
-    dateCreation: new Date("2026-02-05")
+        dateLivraison: "2026-02-11T10:00:00Z", // ← Add this
+
+    role: "ADMIN",
+    isActive: true
   }
 ];

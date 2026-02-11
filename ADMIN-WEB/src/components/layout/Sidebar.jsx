@@ -17,7 +17,7 @@ const Sidebar = ({ isOpen, onClose }) => {
   const navItems = [
     { icon: LayoutDashboard, label: 'Tableau de bord', path: '/dashboard' },
     { icon: Package, label: 'Commandes', path: '/commandes' },
-    { icon: History, label: 'Historique Commandes', path: '/commandes-historique' },
+  //  { icon: History, label: 'Historique Commandes', path: '/commandes-historique' },
     { 
       icon: Users, 
       label: 'Équipe', 

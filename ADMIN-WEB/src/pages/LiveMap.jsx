@@ -17,6 +17,7 @@ const center = {
 };
 
 const LiveMap = () => {
+  
   const { livreurs, commandes } = useCommandesStore();
   const [selectedLivreur, setSelectedLivreur] = useState(null);
   const [autoRefresh, setAutoRefresh] = useState(true);

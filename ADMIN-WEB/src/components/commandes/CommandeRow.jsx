@@ -15,11 +15,12 @@ const CommandeRow = ({
   onEditChange
 }) => {
   
-  const getInputValue = (dateString) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toISOString().split('T')[0];
-  };
+const getInputValue = (dateString) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return isNaN(date.getTime()) ? '' : date.toISOString().split('T')[0];
+};
+
 
   return (
     <tr className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${isEditing ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}>
